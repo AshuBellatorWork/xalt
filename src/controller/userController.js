@@ -7,24 +7,23 @@ const { apiSuccessRes, apiErrorRes } = require("../utils/globalFunction");
 const getUsers = async (req, res) => {
   try {
     const users = await prisma.users.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     res.status(200).json({
       success: true,
-      message: 'Users fetched successfully',
+      message: "Users fetched successfully",
       data: users,
     });
   } catch (error) {
-    console.error('Error fetching users:', error.message);
+    console.error("Error fetching users:", error.message);
     res.status(500).json({
       success: false,
-      message: 'Internal server error while fetching users',
+      message: "Internal server error while fetching users",
       error: error.message,
     });
   }
 };
-
 
 const createUser = async (req, res) => {
   const schema = Joi.object({
@@ -73,7 +72,7 @@ const createUser = async (req, res) => {
       return res.status(409).json({
         success: false,
         message: "Email already exists",
-      });                        
+      });
     }
     const hashedPassword = await bcrypt.hash(user_password, 10);
     const user = await prisma.users.create({
@@ -95,6 +94,7 @@ const createUser = async (req, res) => {
       success: true,
       message: "User created successfully",
       data: user,
+      status: 200,
     });
   } catch (err) {
     console.error("Create user error:", err.message);
@@ -105,14 +105,13 @@ const createUser = async (req, res) => {
   }
 };
 
-
 const loginUser = async (req, res) => {
   const { user_email, user_password, user_type } = req.body;
 
   const schema = Joi.object({
     user_email: Joi.string().required(),
     user_password: Joi.string().required(),
-    user_type: Joi.number().valid(1, 2).optional(), 
+    user_type: Joi.number().valid(1, 2).optional(),
   });
 
   const { error } = schema.validate(req.body);
@@ -122,42 +121,48 @@ const loginUser = async (req, res) => {
 
   try {
     const user = await prisma.users.findUnique({
-      where: { user_email }
+      where: { user_email },
     });
 
     if (!user) {
-      return apiErrorRes(res, 'Invalid username or password', null, 1, 400);
+      return apiErrorRes(res, "Invalid username or password", null, 1, 400);
     }
 
     const isMatch = await bcrypt.compare(user_password, user.user_password);
     if (!isMatch) {
-      return apiErrorRes(res, 'Invalid username or password', null, 1, 400);
+      return apiErrorRes(res, "Invalid username or password", null, 1, 400);
     }
 
     if (user.user_type !== user_type) {
-      return apiErrorRes(res, 'Your account is locked !! Please Contact Admin', null, 1, 400);
+      return apiErrorRes(
+        res,
+        "Your account is locked !! Please Contact Admin",
+        null,
+        1,
+        400
+      );
     }
 
     if (user.user_type === 1 && user.user_account_lock === true) {
-      return apiErrorRes(res, 'Please contact Admin to unlock your account', null, 1, 400);
+      return apiErrorRes(
+        res,
+        "Please contact Admin to unlock your account",
+        null,
+        1,
+        400
+      );
     }
 
     if (user.user_type === 2 && user.user_account_lock === true) {
-      return apiErrorRes(res, 'Your account is locked', null, 1, 400);
+      return apiErrorRes(res, "Your account is locked", null, 1, 400);
     }
 
-    const token = 'someauthtoken'; 
+    const token = "someauthtoken";
 
-    return apiSuccessRes(
-      res,
-      'User logged in successfully',
-      user,
-      0,
-      token
-    );
+    return apiSuccessRes(res, "User logged in successfully", user, 0, token);
   } catch (error) {
     console.error(error);
-    return apiErrorRes(res, 'Internal Server Error', error.message, 500);
+    return apiErrorRes(res, "Internal Server Error", error.message, 500);
   }
 };
 
