@@ -1,8 +1,8 @@
-const multer = require('multer');
-const multerS3 = require('multer-s3');
-const { S3Client } = require('@aws-sdk/client-s3');
-const path = require('path');
-const dotenv = require('dotenv');
+const multer = require("multer");
+const multerS3 = require("multer-s3");
+const { S3Client } = require("@aws-sdk/client-s3");
+const path = require("path");
+const dotenv = require("dotenv");
 
 dotenv.config();
 
@@ -28,42 +28,60 @@ const s3Storage = multerS3({
 
 function sanitizeFile(file, cb) {
   const allowedExts = [
-    '.png',
-    '.jpg',
-    '.jpeg',
-    '.gif',
-    '.mp4',
-    '.mkv',
-    '.avi',
-    '.svg',
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".mp4",
+    ".mkv",
+    ".avi",
+    ".svg",
   ];
   const isAllowedExt = allowedExts.includes(
     path.extname(file.originalname.toLowerCase())
   );
-  const isVideoMimeType = file.mimetype.startsWith('video/');
-  const isImageMimeType = file.mimetype.startsWith('image/');
+  const isVideoMimeType = file.mimetype.startsWith("video/");
+  const isImageMimeType = file.mimetype.startsWith("image/");
 
   if (isAllowedExt && (isVideoMimeType || isImageMimeType)) {
     return cb(null, true);
   } else {
-    return cb(new Error('Error: File type not allowed!'), false);
+    return cb(new Error("Error: File type not allowed!"), false);
   }
 }
 
 // Multer upload configuration
 const uploadImage = multer({
   storage: s3Storage,
-  
+
   fileFilter: (req, file, callback) => {
     sanitizeFile(file, callback);
   },
   limits: {
-    fileSize: 1024 * 1024 * 2, // Limit file size to 2MB
+    fileSize: 1024 * 1024 * 2, 
   },
   onError: (err, next) => {
-    console.error('File upload error: ', err);
+    console.error("File upload error: ", err);
     next(err);
   },
 }).array("image", 10);
 
-module.exports = uploadImage;
+
+const uploadSingleImage = multer({
+  storage: s3Storage,
+  fileFilter: (_, file, cb) => {
+    sanitizeFile(file, (err, passed) => {
+      if (err) {
+        console.error("File upload error:", err.message);
+        return cb(err, false); 
+      }
+      cb(null, true); 
+    });
+  },
+  limits: {
+    fileSize: 1024 * 1024 * 2, // 2MB
+  },
+}).single("image");
+
+
+module.exports = { uploadImage, uploadSingleImage };

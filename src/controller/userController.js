@@ -1,6 +1,7 @@
 const prisma = require("../model/prismaClient");
 const Joi = require("joi");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const { sendWelcomeEmail } = require("../utils/mailer");
 const { apiSuccessRes, apiErrorRes } = require("../utils/globalFunction");
 
@@ -122,6 +123,14 @@ const loginUser = async (req, res) => {
   try {
     const user = await prisma.users.findUnique({
       where: { user_email },
+      select: {
+        user_name: true,
+        user_email: true,
+        user_password: true,
+        user_type: true,
+        user_account_lock: true,
+        user_id: true,
+      },
     });
 
     if (!user) {
@@ -157,8 +166,12 @@ const loginUser = async (req, res) => {
       return apiErrorRes(res, "Your account is locked", null, 1, 400);
     }
 
-    const token = "someauthtoken";
-
+    const token = jwt.sign(
+      { user_id: user.user_id, user_email: user.user_email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+    user["token"] = token;
     return apiSuccessRes(res, "User logged in successfully", user, 0, token);
   } catch (error) {
     console.error(error);
