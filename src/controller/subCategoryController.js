@@ -1,20 +1,58 @@
 const prisma = require("../model/prismaClient");
 const Joi = require("joi");
 
+// const getSubCategory = async (req, res) => {
+//   try {
+//     // const sub_categories = await prisma.sub_categories.findMany();
+//     const sub_categories = await prisma.sub_categories.findMany({
+//       include: {
+//         categories: true,
+//       },
+//     });
+//     console.log("hello ", sub_categories);
+//     return;
+//     return res.status(200).json({
+//       success: true,
+//       message: "Sub Categories fetched successfully",
+//       staus: 200,
+//       data: sub_categories,
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: "Something went wrong while fetching sub categories",
+//       status: 400,
+//       error: error.message,
+//     });
+//   }
+// };
 const getSubCategory = async (req, res) => {
   try {
-    const sub_categories = await prisma.sub_categories.findMany();
+    const sub_categories = await prisma.sub_categories.findMany({
+      include: {
+        category: {
+          select: { name: true },
+        },
+      },
+    });
+
+    const Data = sub_categories.map((subCat) => ({
+      ...subCat,
+      category_name: subCat.category?.name ?? null,
+      category: undefined,
+    }));
+
     return res.status(200).json({
       success: true,
       message: "Sub Categories fetched successfully",
-      staus: 200,
-      data: sub_categories,
+      status: 200,
+      data: Data,
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
       message: "Something went wrong while fetching sub categories",
-      status: 400,
+      status: 500,
       error: error.message,
     });
   }
@@ -114,7 +152,7 @@ const updateSubCategory = async (req, res) => {
       const newImagePaths = req.files
         .map((file) => file?.location)
         .filter(Boolean);
-      updatedImages = [...updatedImages, ...newImagePaths]; 
+      updatedImages = [...updatedImages, ...newImagePaths];
     }
 
     const updatedSubCategory = await prisma.sub_categories.update({
@@ -144,39 +182,35 @@ const updateSubCategory = async (req, res) => {
   }
 };
 
-
 const deleteSubCategoryByIdController = async (req, res) => {
   const id = parseInt(req.params.id);
 
   try {
     const subCategory = await prisma.sub_categories.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!subCategory) {
       return res.status(404).json({
         success: false,
-        message: "Sub-category not found"
+        message: "Sub-category not found",
       });
     }
     await prisma.sub_categories.delete({
-      where: { id }
+      where: { id },
     });
 
     return res.status(200).json({
       success: true,
-      message: "Sub-category deleted successfully!"
+      message: "Sub-category deleted successfully!",
     });
-
   } catch (error) {
     return res.status(500).json({
       success: false,
       message: "Error deleting sub-category",
-      error: error.message
+      error: error.message,
     });
   }
 };
 
-module.exports = { getSubCategory, createSubCategory, updateSubCategory,  };
-
-
+module.exports = { getSubCategory, createSubCategory, updateSubCategory };

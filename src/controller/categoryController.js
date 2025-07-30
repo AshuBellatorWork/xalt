@@ -111,7 +111,7 @@ const updateCategory = async (req, res) => {
       const newImagePaths = req.files
         .map((file) => file?.location)
         .filter(Boolean);
-      updatedImages = [...updatedImages, ...newImagePaths]; 
+      updatedImages = [...updatedImages, ...newImagePaths];
     }
 
     const updatedCategory = await prisma.categories.update({
